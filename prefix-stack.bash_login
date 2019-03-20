@@ -1,0 +1,19 @@
+# Copyright 1999-2019 Gentoo Authors
+# Distributed under the terms of the GNU General Public License v2
+#
+# In stacked Prefix there is no bash installed, so there is
+# no bash able to load this Prefix' profile as login shell.
+# Instead, you can specify this one as bash rcfile to mimic
+# a bash login shell using this stacked Prefix profile.
+#
+
+if [[ -s '@GENTOO_PORTAGE_EPREFIX@/etc/profile' ]] ; then
+	. '@GENTOO_PORTAGE_EPREFIX@/etc/profile'
+fi
+if [[ -s ~/.bash_profile ]] ; then
+	. ~/.bash_profile
+elif [[ -s ~/.bash_login ]] ; then
+	. ~/.bash_login
+elif [[ -s ~/.profile ]] ; then
+	. ~/.profile
+fi
