@@ -162,33 +162,29 @@ ebegin "installing required basic packages"
 	export EPREFIX@=@"${CHILD_EPREFIX}"
 	export PORTAGE_OVERRIDE_EPREFIX@=@"${PARENT_EPREFIX}"
 
-#	# this -pv is there to avoid the global update output, which is
-#	# there on the first emerge run. (thus, just cosmetics).
-#	emerge --pretend --oneshot --nodeps baselayout-prefix
-
 	# let baselayout create the directories
 	USE@=@"${USE} build" \
 	emerge --verbose --nodeps --oneshot \
 		'>=baselayout-prefix-2.6'
 
-	# Record the prefix-toolkit into @world file, as it provides the
-	# env.d telling the PM to manage this stacked Prefix, but may not
-	# (unlike baselayout) be part of @system set per the profile.
-	emerge --verbose --nodeps \
-		prefix-toolkit
-
+	# In prefix-stack, app-portage/prefix-toolkit does
+	# install/update an etc/portage/profile/packages file,
+	# removing all @system packages from current make.profile,
+	# and adding itself to @system set instead.
 	emerge --verbose --nodeps --oneshot \
-		gentoo-functions \
-		elt-patches \
-		gnuconfig \
-		gcc-config
+		app-portage/prefix-toolkit
+
+	# In prefix-stack, prefix-toolkit does have an RDEPEND on them,
+	# to hold them in the @system set.
+	emerge --verbose --nodeps --oneshot \
+		sys-apps/gentoo-functions \
+		app-portage/elt-patches \
+		sys-devel/gnuconfig \
+		sys-devel/gcc-config
 
 	# select the stack wrapper profile from gcc-config
-	env -i PORTAGE_CONFIGROOT="${CHILD_EPREFIX}" "$(type -P bash)" "${CHILD_EPREFIX}"/usr/bin/gcc-config 1
-
-	# do this _after_ selecting the correct compiler!
-	emerge --verbose --nodeps --oneshot \
-		libtool
+	env -i PORTAGE_CONFIGROOT="${CHILD_EPREFIX}" \
+		"$(type -P bash)" "${CHILD_EPREFIX}"/usr/bin/gcc-config 1
 )
 eend_exit $?
 

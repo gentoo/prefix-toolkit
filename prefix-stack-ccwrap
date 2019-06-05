@@ -63,16 +63,21 @@ IFS=$save_ifs
 
 PATH=${new_path}
 
-# binutils-config's ldwrapper understands '-R' for aix and hpux too.
-# parity (winnt) understands -rpath only ...
-case "${chost}" in
-*-winnt*) rpath_opt="-Wl,-rpath," ;;
-*) rpath_opt="-Wl,-R," ;;
-esac
-
-pfx_link=("-L${prefix}/usr/lib" "-L${prefix}/lib")
-pfx_link_r=("${rpath_opt}${prefix}/lib" "${rpath_opt}${prefix}/usr/lib")
 pfx_comp=("-I${prefix}/include" "-I${prefix}/usr/include")
+pfx_link=("-L${prefix}/usr/lib" "-L${prefix}/lib")
+# binutils-config's ldwrapper understands '-R' for aix and hpux too.
+pfx_link_r=("-Wl,-R,${prefix}/lib" "-Wl,-R,${prefix}/usr/lib")
+case "${chost}" in
+*-winnt*)
+	# parity (winnt) understands -rpath only ...
+	pfx_link_r=("-Wl,-rpath,${prefix}/lib" "-Wl,-rpath,${prefix}/usr/lib")
+	;;
+*-linux*)
+	# With gcc, -isystem would avoid warning messages in installed headers,
+	# but that breaks with AIX host headers.
+	pfx_comp=("-isystem" "${prefix}/include" "-isystem" "${prefix}/usr/include")
+	;;
+esac
 
 # ensure we run the right chost program in base prefix
 [[ ${myself} == *-*-*-* ]] || myself=${chost}-${myself#${chost}-}

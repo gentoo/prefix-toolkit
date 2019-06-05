@@ -13,15 +13,24 @@ SLOT="0"
 [[ ${PV} == 9999 ]] ||
 KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sparc ~x86 ~ppc-aix ~x64-cygwin ~amd64-fbsd ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~m68k-mint ~sparc-solaris ~sparc64-solaris ~x64-solaris ~x86-solaris ~x86-winnt"
 
-BDEPEND="
-	>sys-apps/portage-2.3.62
-"
-DEPEND=""
-RDEPEND="
+DEPEND="
 	!app-portage/prefix-chain-setup
 	!sys-apps/prefix-chain-utils
+"
+BDEPEND="${DEPEND}
+	>sys-apps/portage-2.3.62
+"
+# In prefix-stack, these dependencies actually are the @system set,
+# as we rely on the base prefix anyway for package management,
+# which should have a proper @system set.
+# See als: pkg_preinst
+RDEPEND="${DEPEND}
 	prefix-stack? (
 		>=sys-apps/baselayout-prefix-2.6
+		sys-apps/gentoo-functions
+		app-portage/elt-patches
+		sys-devel/gnuconfig
+		sys-devel/gcc-config
 	)
 "
 
@@ -127,6 +136,43 @@ src_install() {
 	fi
 	exeinto /
 	doexe startprefix
+}
+
+pkg_preinst() {
+	use prefix-stack || return 0
+	ebegin "Purging @system package set for prefix stack"
+	# In prefix stack we empty out the @system set defined via make.profile,
+	# as we may be using some normal profile, but that @system set applies
+	# to the base prefix only.
+	# Instead, we only put ourselve into the @system set, and have additional
+	# @system packages in our RDEPEND.
+	my_lsprofile() {
+		(
+			cd -P "${1:-.}" || exit 1
+			[[ -r ./parent ]] &&
+				for p in $(<parent)
+				do
+					my_lsprofile "${p}" || exit 1
+				done
+			pwd -P
+		)
+	}
+	local systemset="/etc/portage/profile/packages"
+	dodir "${systemset%/*}"
+	[[ -s ${EROOT}${systemset} ]] &&
+		grep -v "# maintained by ${PN}" \
+			"${EROOT}${systemset}" \
+			> "${ED}${systemset}"
+	local p
+	for p in $(my_lsprofile "${EPREFIX}"/etc/portage/make.profile)
+	do
+		[[ -s ${p}/${systemset##*/} ]] || continue
+		awk '/^[ \t]*[^-#]/{print "-" $1 " # maintained by '"${PN}-${PVR}"'"}' \
+			< "${p}"/packages || die
+	done | sort -u >> "${ED}${systemset}"
+	[[ ${PIPESTATUS[@]} == "0 0" ]] || die "failed to collect for ${systemset}"
+	echo "*${CATEGORY}/${PN} # maintained by ${PN}-${PVR}" >> "${ED}${systemset}" || die
+	eend $?
 }
 
 return 0
@@ -430,33 +476,29 @@ ebegin "installing required basic packages"
 	export EPREFIX@=@"${CHILD_EPREFIX}"
 	export PORTAGE_OVERRIDE_EPREFIX@=@"${PARENT_EPREFIX}"
 
-#	# this -pv is there to avoid the global update output, which is
-#	# there on the first emerge run. (thus, just cosmetics).
-#	emerge --pretend --oneshot --nodeps baselayout-prefix
-
 	# let baselayout create the directories
 	USE@=@"${USE} build" \
 	emerge --verbose --nodeps --oneshot \
 		'>=baselayout-prefix-2.6'
 
-	# Record the prefix-toolkit into @world file, as it provides the
-	# env.d telling the PM to manage this stacked Prefix, but may not
-	# (unlike baselayout) be part of @system set per the profile.
-	emerge --verbose --nodeps \
-		prefix-toolkit
-
+	# In prefix-stack, app-portage/prefix-toolkit does
+	# install/update an etc/portage/profile/packages file,
+	# removing all @system packages from current make.profile,
+	# and adding itself to @system set instead.
 	emerge --verbose --nodeps --oneshot \
-		gentoo-functions \
-		elt-patches \
-		gnuconfig \
-		gcc-config
+		app-portage/prefix-toolkit
+
+	# In prefix-stack, prefix-toolkit does have an RDEPEND on them,
+	# to hold them in the @system set.
+	emerge --verbose --nodeps --oneshot \
+		sys-apps/gentoo-functions \
+		app-portage/elt-patches \
+		sys-devel/gnuconfig \
+		sys-devel/gcc-config
 
 	# select the stack wrapper profile from gcc-config
-	env -i PORTAGE_CONFIGROOT="${CHILD_EPREFIX}" "$(type -P bash)" "${CHILD_EPREFIX}"/usr/bin/gcc-config 1
-
-	# do this _after_ selecting the correct compiler!
-	emerge --verbose --nodeps --oneshot \
-		libtool
+	env -i PORTAGE_CONFIGROOT="${CHILD_EPREFIX}" \
+		"$(type -P bash)" "${CHILD_EPREFIX}"/usr/bin/gcc-config 1
 )
 eend_exit $?
 
@@ -535,16 +577,21 @@ IFS=$save_ifs
 
 PATH=${new_path}
 
-# binutils-config's ldwrapper understands '-R' for aix and hpux too.
-# parity (winnt) understands -rpath only ...
-case "${chost}" in
-*-winnt*) rpath_opt="-Wl,-rpath," ;;
-*) rpath_opt="-Wl,-R," ;;
-esac
-
-pfx_link=("-L${prefix}/usr/lib" "-L${prefix}/lib")
-pfx_link_r=("${rpath_opt}${prefix}/lib" "${rpath_opt}${prefix}/usr/lib")
 pfx_comp=("-I${prefix}/include" "-I${prefix}/usr/include")
+pfx_link=("-L${prefix}/usr/lib" "-L${prefix}/lib")
+# binutils-config's ldwrapper understands '-R' for aix and hpux too.
+pfx_link_r=("-Wl,-R,${prefix}/lib" "-Wl,-R,${prefix}/usr/lib")
+case "${chost}" in
+*-winnt*)
+	# parity (winnt) understands -rpath only ...
+	pfx_link_r=("-Wl,-rpath,${prefix}/lib" "-Wl,-rpath,${prefix}/usr/lib")
+	;;
+*-linux*)
+	# With gcc, -isystem would avoid warning messages in installed headers,
+	# but that breaks with AIX host headers.
+	pfx_comp=("-isystem" "${prefix}/include" "-isystem" "${prefix}/usr/include")
+	;;
+esac
 
 # ensure we run the right chost program in base prefix
 [[ ${myself} == *-*-*-* ]] || myself=${chost}-${myself#${chost}-}
