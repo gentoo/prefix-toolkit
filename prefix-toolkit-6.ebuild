@@ -1,4 +1,4 @@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2020 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 EAPI=7
@@ -11,7 +11,7 @@ LICENSE="GPL-3"
 SLOT="0"
 
 [[ ${PV} == 9999 ]] ||
-KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sparc ~x86 ~ppc-aix ~x64-cygwin ~amd64-fbsd ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~m68k-mint ~sparc-solaris ~sparc64-solaris ~x64-solaris ~x86-solaris ~x86-winnt"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sparc ~x86 ~ppc-aix ~x64-cygwin ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~m68k-mint ~sparc-solaris ~sparc64-solaris ~x64-solaris ~x86-solaris ~x86-winnt"
 
 DEPEND="
 	!app-portage/prefix-chain-setup
@@ -31,6 +31,9 @@ RDEPEND="${DEPEND}
 		app-portage/elt-patches
 		sys-devel/gnuconfig
 		sys-devel/gcc-config
+		elibc_Winnt? (
+			dev-libs/pthreads4w
+		)
 	)
 "
 
@@ -547,6 +550,10 @@ ebegin "installing required basic packages"
 		sys-devel/gnuconfig \
 		sys-devel/gcc-config
 
+	# get eventual dependencies, add to world
+	emerge --verbose --update --deep \
+		app-portage/prefix-toolkit
+
 	# select the stack wrapper profile from gcc-config
 	env -i PORTAGE_CONFIGROOT="${CHILD_EPREFIX}" \
 		"$(type -P bash)" "${CHILD_EPREFIX}"/usr/bin/gcc-config 1
@@ -572,6 +579,7 @@ fi
 
 myself=${0##*/} # basename $0
 link_dirs=()
+linkopts=()
 opts=()
 chost="@GENTOO_PORTAGE_CHOST@"
 prefix="@GENTOO_PORTAGE_EPREFIX@"
@@ -586,6 +594,18 @@ orig_args=("$@")
 
 for opt in "$@"
 do
+	if [[ ${chost} == *"-winnt"* ]]; then
+		# We depend on dev-libs/pthreads4w, no?
+		case ${opt} in
+		-pthread | -lpthread)
+			case " ${linkopts[*]} " in
+			*" -lpthread "*) ;;
+			*) linkopts=( "${linkopts[@]}" "-lpthread" ) ;;
+			esac
+			continue
+			;;
+		esac
+	fi
 	case "$opt" in
 	-L)
 		link_dirs=("${link_dirs[@]}" "-L$1")
@@ -648,7 +668,7 @@ esac
 [[ ${myself} == *-*-*-* ]] || myself=${chost}-${myself#${chost}-}
 
 case "$mode" in
-link)    exec "${myself}" "${link_dirs[@]}" "${pfx_link[@]}" "${opts[@]}" "${pfx_comp[@]}" "${pfx_link_r[@]}" ;;
+link)    exec "${myself}" "${link_dirs[@]}" "${pfx_link[@]}" "${opts[@]}" "${pfx_comp[@]}" "${pfx_link_r[@]}" "${linkopts[@]}" ;;
 compile) exec "${myself}" "${link_dirs[@]}" "${opts[@]}" "${pfx_comp[@]}" ;;
 version) exec "${myself}" "${orig_args[@]}" ;;
 dirs)
