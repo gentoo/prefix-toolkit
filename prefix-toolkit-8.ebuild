@@ -134,6 +134,7 @@ src_install() {
 		newins prefix-stack.bashrc bashrc
 		newenvd prefix-stack.envd.99stack 99stack
 		doenvd 000fallback
+		keepdir /usr/share/aclocal
 	else
 		dobin prefix-stack-setup
 	fi
