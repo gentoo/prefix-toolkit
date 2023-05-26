@@ -59,6 +59,15 @@ RETAIN="HOME=$HOME TERM=$TERM USER=$USER SHELL=$SHELL"
 [[ -n ${SSH_AUTH_SOCK} ]] && RETAIN+=" SSH_AUTH_SOCK=$SSH_AUTH_SOCK"
 # if we're on some X terminal, makes sense to inherit that too
 [[ -n ${DISPLAY} ]] && RETAIN+=" DISPLAY=$DISPLAY"
+if [[ -d /proc/registry ]]; then # we're on Cygwin
+	# crucial to Windows but cannot be restored, see
+	# https://cygwin.com/ml/cygwin/2019-08/msg00072.html
+	[[ -n ${SYSTEMDRIVE} ]] && RETAIN+=" SYSTEMDRIVE=$SYSTEMDRIVE"
+	# COMSPEC is to native Windows what SHELL is to *nix
+	[[ -n ${COMSPEC} ]] && RETAIN+=" COMSPEC=$COMSPEC"
+	# some Windows programs (e.g. devenv.exe) need TMP or TEMP
+	[[ -n ${TEMP} ]] && RETAIN+=" TEMP=$TEMP"
+fi
 # do it!
 if [[ ${SHELL#${EPREFIX}} != ${SHELL} ]] ; then
 	'@GENTOO_PORTAGE_EENV@' -i $RETAIN $SHELL -l
