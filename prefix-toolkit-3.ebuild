@@ -320,6 +320,7 @@ PARENT_EPREFIX="@GENTOO_PORTAGE_EPREFIX@"
 PARENT_CHOST="@GENTOO_PORTAGE_CHOST@"
 CHILD_EPREFIX=
 CHILD_PROFILE=
+CHILD_CHOST=
 
 #
 # get ourselfs the functions.sh script for ebegin/eend/etc.
@@ -343,8 +344,9 @@ fi
 
 for arg in "$@"; do
 	case "${arg}" in
-	--eprefix=*)	CHILD_EPREFIX="${arg#--eprefix=}"	;;
-	--profile=*)	CHILD_PROFILE="${arg#--profile=}"	;;
+	--eprefix=*) CHILD_EPREFIX="${arg#--eprefix=}" ;;
+	--profile=*) CHILD_PROFILE="${arg#--profile=}" ;;
+	--chost=*)   CHILD_CHOST="${arg#--chost=}" ;;
 
 	--help)
 		einfo "$0 usage:"
@@ -352,6 +354,8 @@ for arg in "$@"; do
 		einfo "                         where this script is installed (${PARENT_EPREFIX})"
 		einfo "  --profile=[PATH]       The absolute path to the profile to use. This path"
 		einfo "                         must point to a directory within ${PARENT_EPREFIX}"
+		einfo "  --chost=[CHOST]        The CHOST to use for the new EPREFIX, required if"
+		einfo "                         the profile does not set CHOST, or to override."
 		exit 0
 		;;
 	esac
@@ -365,6 +369,32 @@ test -n "${CHILD_EPREFIX}" || { eerror "no eprefix argument given"; exit 1; }
 test -d "${CHILD_EPREFIX}" && { eerror "${CHILD_EPREFIX} already exists"; exit 1; }
 test -n "${CHILD_PROFILE}" || { eerror "no profile argument given"; exit 1; }
 test -d "${CHILD_PROFILE}" || { eerror "${CHILD_PROFILE} does not exist"; exit 1; }
+
+if [[ -z ${CHILD_CHOST} ]]
+then
+	my_lsprofile() {
+		(
+			cd -P "${1:-.}" || exit 1
+			[[ -r ./parent ]] &&
+				for p in $(<parent)
+				do
+					my_lsprofile "${p}" || exit 1
+				done
+			pwd -P
+		)
+	}
+
+	for profile in $(my_lsprofile "${CHILD_PROFILE}") missing
+	do
+		if [[ ${profile} == missing ]]
+		then
+		  eerror "profile does not set CHOST, need --chost argument"
+		  exit 1
+		fi
+		[[ -s "${profile}/make.defaults" ]] || continue
+		grep -q '^[ 	]*CHOST@=@' "${profile}/make.defaults" && break
+	done
+fi
 
 einfo "creating stacked prefix ${CHILD_EPREFIX}"
 
@@ -415,6 +445,9 @@ ebegin "creating make.conf"
 	echo "EPREFIX=\"${CHILD_EPREFIX}\""
 	echo "PORTAGE_OVERRIDE_EPREFIX=\"${PARENT_EPREFIX}\""
 	echo "BROOT=\"${PARENT_EPREFIX}\""
+	if [[ -n ${CHILD_CHOST} ]] ; then
+		echo "CHOST=\"${CHILD_CHOST}\""
+	fi
 ) > "${CHILD_EPREFIX}"/etc/portage/make.conf
 eend_exit $?
 
