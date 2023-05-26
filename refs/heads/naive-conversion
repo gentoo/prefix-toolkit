@@ -1,0 +1,15 @@
+certificate version 0.1
+pusher Sam James <sam@gentoo.org> 1685080562 +0100
+pushee git+ssh://git.gentoo.org/proj/prefix/prefix-toolkit.git
+nonce 1685080562-ed9765f97023cbff16291db3b5304671f61c59f5
+
+0000000000000000000000000000000000000000 c381147f006e8d7742b85cfa58f49e09bf348d9e refs/heads/naive-conversion
+-----BEGIN PGP SIGNATURE-----
+
+iOUEABYKAI0WIQQlpruI3Zt2TGtVQcJzhAn1IN+RkAUCZHBJ8l8UgAAAAAAuAChp
+c3N1ZXItZnByQG5vdGF0aW9ucy5vcGVucGdwLmZpZnRoaG9yc2VtYW4ubmV0MjVB
+NkJCODhERDlCNzY0QzZCNTU0MUMyNzM4NDA5RjUyMERGOTE5MA8cc2FtQGdlbnRv
+by5vcmcACgkQc4QJ9SDfkZBLhQD/d5usPhsuvbjXo0/BSiaev8rfmU3mdT0MElWV
+ZHLx8vsBAJGvidnKs4DNJWN9dy9uTw/lhEoakkF0SoCShE0D63ME
+=6R4r
+-----END PGP SIGNATURE-----
