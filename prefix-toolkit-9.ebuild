@@ -23,17 +23,21 @@ BDEPEND="${DEPEND}
 # In prefix-stack, these dependencies actually are the @system set,
 # as we rely on the base prefix anyway for package management,
 # which should have a proper @system set.
+# Strictly speaking, only baselayout and gcc-config are necessary
+# (and pthreads4w for Winnt), but it is easier for now to install
+# elt-patches, gentoo-functions and gnuconfig as well, instead of
+# fixing all uses that expect them in EPREFIX rather than BROOT.
 # See als: pkg_preinst
 RDEPEND="${DEPEND}
 	prefix-stack? (
 		>=sys-apps/baselayout-prefix-2.6
-		sys-apps/gentoo-functions
-		app-portage/elt-patches
-		sys-devel/gnuconfig
 		sys-devel/gcc-config
 		elibc_Winnt? (
 			dev-libs/pthreads4w
 		)
+		app-portage/elt-patches
+		sys-apps/gentoo-functions
+		sys-devel/gnuconfig
 	)
 "
 
@@ -67,7 +71,10 @@ src_unpack() {
 	else
 		my_unpack prefix-stack-setup
 	fi
-	my_unpack startprefix
+	if use prefix; then
+		# does not make sense on vanilla Gentoo
+		my_unpack startprefix
+	fi
 }
 
 my_prefixify() {
@@ -138,8 +145,10 @@ src_install() {
 	else
 		dobin prefix-stack-setup
 	fi
-	exeinto /
-	doexe startprefix
+	if use prefix; then
+		exeinto /
+		doexe startprefix
+	fi
 }
 
 pkg_preinst() {
