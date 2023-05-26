@@ -224,6 +224,10 @@ ebegin "installing required basic packages"
 		sys-devel/gnuconfig \
 		sys-devel/gcc-config
 
+	# get eventual dependencies, add to world
+	emerge --verbose --update --deep \
+		app-portage/prefix-toolkit
+
 	# select the stack wrapper profile from gcc-config
 	env -i PORTAGE_CONFIGROOT="${CHILD_EPREFIX}" \
 		"$(type -P bash)" "${CHILD_EPREFIX}"/usr/bin/gcc-config 1
