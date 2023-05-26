@@ -11,11 +11,13 @@ LICENSE="GPL-3"
 SLOT="0"
 
 [[ ${PV} == 9999 ]] ||
-KEYWORDS="~x64-cygwin ~amd64-linux ~x86-linux ~x86-winnt"
+KEYWORDS="~alpha ~amd64 ~arm ~arm64 ~hppa ~ia64 ~mips ~ppc ~ppc64 ~s390 ~sparc ~x86 ~ppc-aix ~x64-cygwin ~amd64-fbsd ~amd64-linux ~x86-linux ~ppc-macos ~x64-macos ~x86-macos ~m68k-mint ~sparc-solaris ~sparc64-solaris ~x64-solaris ~x86-solaris ~x86-winnt"
 
+BDEPEND="
+	>sys-apps/portage-2.3.62
+"
 DEPEND=""
 RDEPEND="
-	>sys-apps/portage-2.3.62
 	!app-portage/prefix-chain-setup
 	!sys-apps/prefix-chain-utils
 	prefix-stack? (
