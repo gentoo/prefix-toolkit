@@ -178,6 +178,12 @@ pkg_preinst() {
 	eend $?
 }
 
+pkg_postinst() {
+	use prefix-stack || return 0
+	[[ -x ${EROOT}/usr/bin/gcc-config ]] || return 0
+	"${EROOT}"/usr/bin/gcc-config ${CHOST}-${P}
+}
+
 return 0
 
 : startprefix <<'EOIN'
@@ -319,6 +325,7 @@ EOIN
 
 : prefix-stack.envd.99stack <<'EOIN'
 PKG_CONFIG_PATH@=@"@GENTOO_PORTAGE_EPREFIX@/usr/lib/pkgconfig:@GENTOO_PORTAGE_EPREFIX@/usr/share/pkgconfig"
+AT_SYS_M4DIR@=@"@GENTOO_PORTAGE_EPREFIX@/usr/share/aclocal"
 PORTAGE_CONFIGROOT@=@"@GENTOO_PORTAGE_EPREFIX@"
 EPREFIX@=@"@GENTOO_PORTAGE_EPREFIX@"
 EOIN
