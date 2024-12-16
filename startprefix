@@ -51,6 +51,7 @@ export SHELL
 
 # give a small notice
 echo "Entering Gentoo Prefix ${EPREFIX}"
+echo "(type 'exit' to leave)"
 # start the login shell, clean the entire environment but what's needed
 RETAIN="HOME=$HOME TERM=$TERM USER=$USER SHELL=$SHELL"
 # PROFILEREAD is necessary on SUSE not to wipe the env on shell start
