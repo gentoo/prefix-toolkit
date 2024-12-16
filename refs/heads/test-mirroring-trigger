@@ -1,0 +1,15 @@
+certificate version 0.1
+pusher Sam James <sam@gentoo.org> 1734366751 +0000
+pushee git+ssh://git.gentoo.org/proj/prefix/prefix-toolkit.git
+nonce 1734366751-2d05fee190cb1c858ee0b5d4d53fdb4accd60803
+
+0000000000000000000000000000000000000000 715647989910760f6e79aeea04363fbc2e603bf8 refs/heads/test-mirroring-trigger
+-----BEGIN PGP SIGNATURE-----
+
+iOUEABYKAI0WIQQlpruI3Zt2TGtVQcJzhAn1IN+RkAUCZ2BWH18UgAAAAAAuAChp
+c3N1ZXItZnByQG5vdGF0aW9ucy5vcGVucGdwLmZpZnRoaG9yc2VtYW4ubmV0MjVB
+NkJCODhERDlCNzY0QzZCNTU0MUMyNzM4NDA5RjUyMERGOTE5MA8cc2FtQGdlbnRv
+by5vcmcACgkQc4QJ9SDfkZBR4gD8CauO0m5jvKmhY9MxG8/8x6qUtBpfgoiKAxRA
+g9cmHoIBALfimtF5HHb+17Br1QFcaWMNext4FLu5bo2vF04KrcEN
+=ccYj
+-----END PGP SIGNATURE-----
