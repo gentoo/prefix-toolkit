@@ -1,5 +1,5 @@
 #!@GENTOO_PORTAGE_EBASH@
-# Copyright 1999-2019 Gentoo Authors
+# Copyright 1999-2025 Gentoo Authors
 # Distributed under the terms of the GNU General Public License v2
 
 # Fabian Groffen <grobian@gentoo.org> -- 2007-03-10
@@ -60,6 +60,10 @@ RETAIN="HOME=$HOME TERM=$TERM USER=$USER SHELL=$SHELL"
 [[ -n ${SSH_AUTH_SOCK} ]] && RETAIN+=" SSH_AUTH_SOCK=$SSH_AUTH_SOCK"
 # if we're on some X terminal, makes sense to inherit that too
 [[ -n ${DISPLAY} ]] && RETAIN+=" DISPLAY=$DISPLAY"
+# support Wayland but require it to be an absolute location, for
+# XDG_RUNTIME_DIR might be provided inside the Prefix itself #915393
+[[ -n ${WAYLAND_DISPLAY} && ${WAYLAND_DISPLAY} == /* ]] && \
+	RETAIN+=" WAYLAND_DISPLAY=$WAYLAND_DISPLAY"
 if [[ -d /proc/registry ]]; then # we're on Cygwin
 	# crucial to Windows but cannot be restored, see
 	# https://cygwin.com/ml/cygwin/2019-08/msg00072.html
