@@ -51,6 +51,7 @@ export SHELL
 
 # give a small notice
 echo "Starting Gentoo Prefix shell ${SHELL}"
+echo "Edit ${EPREFIX}/etc/prefix_retain.conf to add environment variables to keep"
 echo "[exit the shell to deactivate Gentoo Prefix]"
 # start the login shell, clean the entire environment but what's needed
 RETAIN="HOME=$HOME TERM=$TERM USER=$USER SHELL=$SHELL"
@@ -73,6 +74,13 @@ if [[ -d /proc/registry ]]; then # we're on Cygwin
 	# some Windows programs (e.g. devenv.exe) need TMP or TEMP
 	[[ -n ${TEMP} ]] && RETAIN+=" TEMP=$TEMP"
 fi
+
+# Load user defined RETAIN variables
+while IFS= read -r key; do
+  [[ -z "$key" || "$key" == \#* ]] && continue
+  RETAIN+=" $key=${!key}"
+done < ${EPREFIX}/etc/prefix_retain.conf
+
 # do it!
 if [[ ${SHELL#${EPREFIX}} != ${SHELL} ]] ; then
 	'@GENTOO_PORTAGE_EENV@' -i $RETAIN $SHELL -l
